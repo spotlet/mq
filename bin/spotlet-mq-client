@@ -1,0 +1,22 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies
+ */
+
+var mq = require('../')
+
+var HOST = process.env.HOST || 'localhost';
+var PORT = process.env.PORT || 9346;
+var client = mq.createCommandClient();
+client.connect(HOST, PORT);
+process.stdin.on('readable', function () {
+  var chunk = null;
+  var cmd = null;
+  var parts = null;
+  while (chunk = this.read()) {
+    parts = String(chunk).trim().split(' ');
+    cmd = mq.Command(parts.shift(), parts);
+    client.send(cmd);
+  }
+});

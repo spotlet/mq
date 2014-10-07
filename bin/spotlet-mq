@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies
+ */
+
+var mq = require('../')
+
+var PORT = process.env.PORT || 9346;
+var server = mq.createCommandServer(oncommand).listen(PORT);
+function oncommand (cmd) {
+  console.log('cmd', cmd);
+}
+
+

@@ -1,0 +1,13 @@
+{
+  "name": "spotlet-mq",
+  "version": "0.0.1",
+  "main": "index.js",
+  "bin": "bin/spotlet-mq",
+  "scripts": {
+    "test": "node test"
+  },
+  "dependencies": {
+    "nanomsg": "~0.2.9",
+    "amp": "~0.3.1"
+  }
+}
