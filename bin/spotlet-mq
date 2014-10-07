@@ -8,7 +8,7 @@ var mq = require('../')
   , path = require('path')
   , debug = require('debug')('spotlet-mq')
 
-var REALMS = process.env.REALMS || './realms';
+var REALMS = process.env.REALMS || void function() { throw new Error("Environment variable `REALMS' undefined"); }();
 var PORT = process.env.PORT || 9346;
 var server = mq.createCommandServer(oncommand).listen(PORT);
 debug("listening on port `%d'", PORT);
