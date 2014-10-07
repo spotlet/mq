@@ -5,11 +5,20 @@
  */
 
 var mq = require('../')
+  , path = require('path')
+  , debug = require('debug')('spotlet-mq')
 
+var REALMS = process.env.REALMS || './realms';
 var PORT = process.env.PORT || 9346;
 var server = mq.createCommandServer(oncommand).listen(PORT);
+debug("listening on port `%d'", PORT);
 function oncommand (cmd) {
-  console.log('cmd', cmd);
-}
+  debug("command received %j", cmd);
+  var realm = require(path.resolve(REALMS, cmd.realm));
 
+  if ('function' == typeof realm) {
+    debug("entering realm `%s'", cmd.realm);
+    realm(cmd.args);
+  }
+}
 
