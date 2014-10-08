@@ -17,15 +17,24 @@ var r = repl.start({
   prompt: 'mq> ',
   input: process.stdin,
   output: process.stdout,
+  useGlobal: false,
   eval: oneval
 });
 
+
+// enable some tab completion
+var cmds = ['list', 'ps', 'mount', 'clone', 'stop'];
+r.complete = function (line, done) {
+  var hits = cmds.filter(function (c) { return 0 == c.indexOf(line);})
+  done(null, [hits.length ? hits : cmds, line]);
+};
+
 process.on('SIGINT', function (signal, code) {
-  exit(0)
+  exit(0);
 });
 
 r.on('exit', function () {
-  console.log()
+  console.log();
   console.log("bye : ]");
   exit(0)
 });
@@ -53,5 +62,4 @@ function oneval (src, context, filename, done) {
     done(err, result);
   });
 }
-
 
