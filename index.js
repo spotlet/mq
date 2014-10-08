@@ -23,6 +23,14 @@ exports.Command = Command;
 exports.createCommandServer = createCommandServer;
 function createCommandServer (handle) {
   var server = Server();
+  var send = server.socket.send;
+  server.socket.send = function (buffer) {
+    if (buffer instanceof Error) {
+      buffer = "error: "+buffer.message;
+    }
+
+    send.call(this, buffer);
+  };
   server.socket.on('message', function (buf) {
     var cmd = Command.decode(buf);
     if (null == cmd) {

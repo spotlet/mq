@@ -30,7 +30,7 @@ function oncommand (cmd) {
       realm(cmd.args, server.socket);
     }
   } catch (e) {
-    console.error("error: Unknown realm %s", cmd.realm);
+    console.error(e);
     server.socket.send("error: Unknown realm `"+cmd.realm+"`");
   }
 }

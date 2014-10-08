@@ -18,6 +18,7 @@ var r = repl.start({
   input: process.stdin,
   output: process.stdout,
   useGlobal: false,
+  ignoreUndefined: true,
   eval: oneval
 });
 
@@ -31,6 +32,14 @@ r.complete = function (line, done) {
 
   if (-1 != line.indexOf('mount')) {
     send(['list'], function (err, res) {
+      res = res || [];
+      tried = line.split(' ').filter(Boolean).pop();
+      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
+      done(null, [hits.length ? hits : res, tried]);
+    });
+  } else if (-1 != line.indexOf('stop') || -1 != line.indexOf('kill')) {
+    send(['ps'], function (err, res) {
+      res = res || [];
       tried = line.split(' ').filter(Boolean).pop();
       hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
       done(null, [hits.length ? hits : res, tried]);
@@ -84,7 +93,9 @@ function send (args, done) {
         switch (typeof result) {
           case 'string':
             if (-1 != result.indexOf('error')) {
-            result = new Error(result.replace(/error\:?\s+/, ''));
+            result = (new Error(result.replace(/error\:?\s+/, ''))).message;
+            console.error(result)
+            return done(null, undefined);
           }
           break;
         }
