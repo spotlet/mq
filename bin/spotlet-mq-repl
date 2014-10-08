@@ -23,7 +23,7 @@ var r = repl.start({
 
 
 // enable some tab completion
-var cmds = ['list', 'ps', 'mount', 'clone', 'stop'];
+var cmds = ['list', 'ls', 'ps', 'mount', 'clone', 'stop', 'kill'];
 r.complete = function (line, done) {
   var comps = cmds;
   var hits = null;
@@ -60,7 +60,7 @@ function oneval (src, context, filename, done) {
 }
 
 function send (args, done) {
-  var cmd = mq.Command(args.shift(), args);
+  var cmd = mq.Command(translate(args.shift()), args);
   switch (cmd.realm) {
     case 'exit':
       exit(0);
@@ -69,13 +69,42 @@ function send (args, done) {
 
   client.send(cmd, function (err, res) {
     var result = null;
+    var tmp = result;
     var str = String(res);
     if (str.length) {
       result = str.split('\n').filter(Boolean);
       if (0 == result.length) {
         result = null;
-      }
+      } else if (1 == result.length) {
+        result = result[0];
+        try {
+          tmp = JSON.parse(result);
+          result = tmp;
+        } catch (e) { }
+        switch (typeof result) {
+          case 'string':
+            if (-1 != result.indexOf('error')) {
+            result = new Error(result.replace(/error\:?\s+/, ''));
+          }
+          break;
+        }
+
+      } else try {
+        tmp = JSON.parse(str);
+        result = tmp;
+      } catch (e) { }
     }
+
+    // emit
     done(err, result);
   });
+}
+
+function translate (cmd) {
+  switch (cmd) {
+    case 'ls': cmd = 'list'; break;
+    case 'kill': cmd = 'stop'; break;
+  }
+
+  return cmd;
 }
