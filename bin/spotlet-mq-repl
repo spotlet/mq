@@ -25,8 +25,20 @@ var r = repl.start({
 // enable some tab completion
 var cmds = ['list', 'ps', 'mount', 'clone', 'stop'];
 r.complete = function (line, done) {
-  var hits = cmds.filter(function (c) { return 0 == c.indexOf(line);})
-  done(null, [hits.length ? hits : cmds, line]);
+  var comps = cmds;
+  var hits = null;
+  var tried = null;
+
+  if (-1 != line.indexOf('mount')) {
+    send(['list'], function (err, res) {
+      tried = line.split(' ').filter(Boolean).pop();
+      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
+      done(null, [hits.length ? hits : res, tried]);
+    });
+  } else {
+    hits = cmds.filter(function (c) { return 0 == c.indexOf(line);})
+    done(null, [hits.length ? hits : comps, line]);
+  }
 };
 
 process.on('SIGINT', function (signal, code) {
@@ -44,12 +56,17 @@ function oneval (src, context, filename, done) {
   var parts = null;
   src = src.replace(/\r|\n/g,'').replace(/^\(/,'').replace(/\)$/g, '');
   parts = src.split(' ');
-  cmd = mq.Command(parts.shift(), parts);
+  send(parts, done);
+}
+
+function send (args, done) {
+  var cmd = mq.Command(args.shift(), args);
   switch (cmd.realm) {
     case 'exit':
       exit(0);
     break;
   }
+
   client.send(cmd, function (err, res) {
     var result = null;
     var str = String(res);
@@ -62,4 +79,3 @@ function oneval (src, context, filename, done) {
     done(err, result);
   });
 }
-
