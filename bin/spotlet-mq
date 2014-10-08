@@ -21,11 +21,16 @@ server = mq.createCommandServer(oncommand).listen(PORT);
 debug("listening on port `%d'", PORT);
 function oncommand (cmd) {
   debug("command received %j", cmd);
-  var realm = require(path.resolve(REALMS, cmd.realm));
+  var realm = null;
+  try {
+    realm = require(path.resolve(REALMS, cmd.realm));
 
-  if ('function' == typeof realm) {
-    debug("entering realm `%s'", cmd.realm);
-    realm(cmd.args, server.socket);
+    if ('function' == typeof realm) {
+      debug("entering realm `%s'", cmd.realm);
+      realm(cmd.args, server.socket);
+    }
+  } catch (e) {
+    console.error("error: Unknown realm %s", cmd.realm);
   }
 }
 

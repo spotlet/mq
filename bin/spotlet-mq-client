@@ -33,9 +33,16 @@ process.stdin.on('readable', function () {
     cmd = mq.Command(parts.shift(), parts);
     debug("sending command");
     client.send(cmd, function (err, res) {
-      console.log(String(res))
+      var msg = String(res).trim();
       if (0 == (--queued)) {
         client.close();
+      }
+
+      if (-1 != msg.toLowerCase().indexOf('error')) {
+        console.error(msg);
+        exit(1);
+      } else {
+        console.log(msg);
         exit(0);
       }
     });

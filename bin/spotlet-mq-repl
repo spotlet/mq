@@ -1,0 +1,57 @@
+#!/usr/bin/env node
+
+/**
+ * Module dependencies
+ */
+
+var mq = require('../')
+  , repl = require('repl')
+
+var exit = process.exit;
+var HOST = process.env.HOST || 'localhost';
+var PORT = process.env.PORT || 9346;
+var client = mq.createCommandClient().connect(HOST, PORT);
+
+// init repl
+var r = repl.start({
+  prompt: 'mq> ',
+  input: process.stdin,
+  output: process.stdout,
+  eval: oneval
+});
+
+process.on('SIGINT', function (signal, code) {
+  exit(0)
+});
+
+r.on('exit', function () {
+  console.log()
+  console.log("bye : ]");
+  exit(0)
+});
+
+function oneval (src, context, filename, done) {
+  var cmd = null;
+  var parts = null;
+  src = src.replace(/\r|\n/g,'').replace(/^\(/,'').replace(/\)$/g, '');
+  parts = src.split(' ');
+  cmd = mq.Command(parts.shift(), parts);
+  switch (cmd.realm) {
+    case 'exit':
+      exit(0);
+    break;
+  }
+  client.send(cmd, function (err, res) {
+    var result = null;
+    var str = String(res);
+    if (str.length) {
+      result = str.split('\n').filter(Boolean);
+      if (0 == result.length) {
+        result = null;
+      }
+    }
+    done(err, result);
+  });
+}
+
+
