@@ -23,27 +23,35 @@ var r = repl.start({
 });
 
 
+var cmds = [
+  'list', 'ls', 'ps', 'mount', 'clone',
+  'stop', 'kill', 'rm'
+];
+
 // enable some tab completion
-var cmds = ['list', 'ls', 'ps', 'mount', 'clone', 'stop', 'kill'];
 r.complete = function (line, done) {
   var comps = cmds;
   var hits = null;
   var tried = null;
 
+  function hintFromOutput (realm) {
+    send([realm], function (err, res) {
+      res = (Array.isArray(res) ? res : [res]).filter(Boolean);
+      tried = line.split(' ').filter(Boolean).pop();
+      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
+      done(null, [
+        (hits.length ? hits : res),
+        (res.length > 0 ? tried : line)
+      ]);
+    });
+  }
+
   if (-1 != line.indexOf('mount')) {
-    send(['list'], function (err, res) {
-      res = res || [];
-      tried = line.split(' ').filter(Boolean).pop();
-      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
-      done(null, [hits.length ? hits : res, tried]);
-    });
+    hintFromOutput('list');
   } else if (-1 != line.indexOf('stop') || -1 != line.indexOf('kill')) {
-    send(['ps'], function (err, res) {
-      res = res || [];
-      tried = line.split(' ').filter(Boolean).pop();
-      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
-      done(null, [hits.length ? hits : res, tried]);
-    });
+    hintFromOutput('ps');
+  } else if (-1 != line.indexOf('rm')) {
+    hintFromOutput('list');
   } else {
     hits = cmds.filter(function (c) { return 0 == c.indexOf(line);})
     done(null, [hits.length ? hits : comps, line]);
@@ -76,6 +84,10 @@ function send (args, done) {
     break;
   }
 
+  if (!cmd.realm) {
+    return done(null, undefined);
+  }
+
   client.send(cmd, function (err, res) {
     var result = null;
     var tmp = result;
@@ -104,6 +116,10 @@ function send (args, done) {
         tmp = JSON.parse(str);
         result = tmp;
       } catch (e) { }
+    }
+
+    if (!result) {
+      result = undefined;
     }
 
     // emit
