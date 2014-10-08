@@ -52,8 +52,8 @@ function createCommandClient () {
   var client = Client();
   var send = client.send.bind(client);
 
-  client.send = function (cmd) {
-    send(Command.encode(cmd));
+  client.send = function (cmd, fn) {
+    send(Command.encode(cmd), fn);
     return this;
   };
 

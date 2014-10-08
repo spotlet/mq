@@ -7,27 +7,38 @@
 var mq = require('../')
   , debug = require('debug')('spotlet-mq-client')
 
+var exit = process.exit;
+
 var HOST = process.env.HOST || 'localhost';
 var PORT = process.env.PORT || 9346;
-var client = mq.createCommandClient();
-debug("connecting to host (%s) on port (%d)", HOST, PORT);
-client.connect(HOST, PORT);
+
 process.stdin.on('readable', function () {
-  debug("reading chunk");
   var chunk = null;
   var cmd = null;
   var parts = null;
-  while (chunk = this.read()) {
+  var client = null;
+  var queued = 0;
+  debug("connecting to host (%s) on port (%d)", HOST, PORT);
+  client = mq.createCommandClient().connect(HOST, PORT);
+  while (chunk = this.read()) void function () {
+    debug("reading chunk");
     debug("parsing input");
     parts = String(chunk).trim().split(' ');
     if (0 == parts.length) {
       debug("E: bad input");
-      continue;
+      return;
     }
+    queued++;
     debug("realm (%s)", parts[0]);
     cmd = mq.Command(parts.shift(), parts);
     debug("sending command");
-    client.send(cmd);
-  }
+    client.send(cmd, function (err, res) {
+      console.log(String(res))
+      if (0 == (--queued)) {
+        client.close();
+        exit(0);
+      }
+    });
+  }();
 });
 
