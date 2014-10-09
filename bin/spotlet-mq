@@ -30,8 +30,12 @@ function oncommand (cmd) {
       realm(cmd.args, server.socket);
     }
   } catch (e) {
-    console.error(e);
-    server.socket.send("error: Unknown realm `"+cmd.realm+"`");
+    if ('MODULE_NOT_FOUND' == e.code) {
+      server.socket.send("error: -mq: "+ cmd.realm +": command/realm not found");
+    } else {
+      console.error(e);
+      server.socket.send("error: -mq: "+ e.message);
+    }
   }
 }
 

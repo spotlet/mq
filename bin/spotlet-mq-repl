@@ -5,12 +5,16 @@
  */
 
 var mq = require('../')
+  , os = require('os')
   , repl = require('repl')
+  , Batch = require('batch')
 
 var exit = process.exit;
 var HOST = process.env.HOST || 'localhost';
 var PORT = process.env.PORT || 9346;
 var client = mq.createCommandClient().connect(HOST, PORT);
+var VERSION = require('../package').version
+var put = console.log.bind(console);
 
 // init repl
 var r = repl.start({
@@ -24,8 +28,9 @@ var r = repl.start({
 
 
 var cmds = [
-  'list', 'ls', 'ps', 'mount', 'clone',
-  'stop', 'kill', 'rm'
+  'list', 'ps', 'mount', 'clone',
+  'stop', 'rm', 'echo', 'printf',
+  'purge', 'status'
 ];
 
 // enable some tab completion
@@ -65,8 +70,8 @@ process.on('SIGINT', function (signal, code) {
 });
 
 r.on('exit', function () {
-  console.log();
-  console.log("bye : ]");
+  put()
+  put("bye : ]");
   exit(0)
 });
 
@@ -80,10 +85,45 @@ function oneval (src, context, filename, done) {
 
 function send (args, done) {
   var cmd = mq.Command(translate(args.shift()), args);
+  var batch = null;
+
   switch (cmd.realm) {
     case 'exit':
       exit(0);
     break;
+
+    case 'help':
+      if (0 == args.length) {
+        put("Spotlet MQ REPL v%s (%s-%s)", VERSION, os.arch(), os.platform());
+        put("These commands are defined internally and are known as \"realms\".");
+        put("Type `help' to see this message and list of commands.");
+        put("See below for usage on available commands:");
+        put();
+        batch = new Batch().concurrency(1);
+        cmds.forEach(function (c) {
+          batch.push(function (next) {
+            client.send(mq.Command(c, ['-h']), function (err, res) {
+              put("\t%s", String(res).replace('usage:', '').trim().replace(/\s/, '\t'));
+              next(err);
+            });
+          });
+        });
+
+        batch.end(function (err, res) {
+          put();
+          done(err, undefined);
+        });
+        return;
+      } else {
+        if ('-h' == args[0]) {
+          put("usage: help [-h] [command]");
+          return done(null, undefined);
+        } else {
+          args.push('-h');
+          cmd = mq.Command(translate(args.shift()), args);
+        }
+      }
+      break;
   }
 
   if (!cmd.realm) {
@@ -106,7 +146,7 @@ function send (args, done) {
         } catch (e) { }
         switch (typeof result) {
           case 'string':
-            if (-1 != String(result).indexOf('error')) {
+            if (String(result).match(/[error|usage]\:?/)) {
               result = (new Error(result.replace(/error\:?\s+/, ''))).message;
               console.error(result)
               return done(null, undefined);

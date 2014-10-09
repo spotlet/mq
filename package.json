@@ -9,6 +9,7 @@
   "dependencies": {
     "nanomsg": "~0.2.9",
     "amp": "~0.3.1",
-    "debug": "~2.0.0"
+    "debug": "~2.0.0",
+    "batch": "~0.5.1"
   }
 }
