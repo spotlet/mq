@@ -38,13 +38,15 @@ r.complete = function (line, done) {
     send([realm], function (err, res) {
       res = (Array.isArray(res) ? res : [res]).filter(Boolean);
       tried = line.split(' ').filter(Boolean).pop();
-      hits = res.filter(function (c) { return 0 == c.indexOf(tried);})
+      hits = res.filter(function (c) { return 0 == String(c).indexOf(tried);})
       done(null, [
-        (hits.length ? hits : res),
+        (hits.length ? hits : res.map(String)),
         (res.length > 0 ? tried : line)
       ]);
     });
   }
+
+  line = String(line);
 
   if (-1 != line.indexOf('mount')) {
     hintFromOutput('list');
@@ -104,11 +106,11 @@ function send (args, done) {
         } catch (e) { }
         switch (typeof result) {
           case 'string':
-            if (-1 != result.indexOf('error')) {
-            result = (new Error(result.replace(/error\:?\s+/, ''))).message;
-            console.error(result)
-            return done(null, undefined);
-          }
+            if (-1 != String(result).indexOf('error')) {
+              result = (new Error(result.replace(/error\:?\s+/, ''))).message;
+              console.error(result)
+              return done(null, undefined);
+            }
           break;
         }
 
@@ -116,10 +118,6 @@ function send (args, done) {
         tmp = JSON.parse(str);
         result = tmp;
       } catch (e) { }
-    }
-
-    if (!result) {
-      result = undefined;
     }
 
     // emit
