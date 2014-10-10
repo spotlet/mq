@@ -157,7 +157,17 @@ function send (args, done) {
       } else try {
         tmp = JSON.parse(str);
         result = tmp;
-      } catch (e) { }
+      } catch (e) {
+        if ('string' == typeof result) {
+          result = result.split('\n');
+        }
+
+        result.forEach(function (line) {
+          put(line);
+        });
+
+        return done(null, undefined);
+      }
     }
 
     // emit
